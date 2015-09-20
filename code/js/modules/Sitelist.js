@@ -315,6 +315,34 @@
 
     return promise;
   };
+  
+  /**
+   * Gets an array of all active and enabled music tabs
+   * @return {Promise}
+   */
+  Sitelist.prototype.getRecentTab = function() {
+    var that=this;
+    var promise = new Promise(function(resolve) {
+      var active_music_tabs=[];
+      chrome.tabs.query({}, function(tabs) {
+        tabs.forEach(function (tab) {
+          if(that.checkEnabled(tab.url) && that.checkTabEnabled(tab.id)) active_music_tabs.push(tab);
+        });
+        
+        chrome.storage.local.get('recentTabId', function (result) {
+          var recentTab = tabs.find(function (element) { return element.id == result.recentTabId; });
+          if (recentTab == undefined){
+            chrome.storage.local.set({'recentTabId': active_music_tabs[0].id });
+            recentTab = active_music_tabs[0];
+          }
+
+          resolve(recentTab);
+        });
+      });
+    });
+    
+    return promise;
+  };
 
   /**
    * Gets an array of all tabs that are music tabs, ignoring whether they are active

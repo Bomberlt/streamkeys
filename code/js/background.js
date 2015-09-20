@@ -1,5 +1,13 @@
 ;(function() {
   "use strict";
+  
+  var changeButton = function(isPlaying) {
+    if(isPlaying) {
+      chrome.browserAction.setIcon({ path: "./pause.png" });
+    } else {
+      chrome.browserAction.setIcon({ path: "./play.png" });
+    }
+  }
 
   /**
    * Send a player action to every active player tab
@@ -14,6 +22,16 @@
         console.log("Sent: " + command + " To: " + tab.url);
       });
     });
+
+    if(command == "playPause") {
+      var recent_tab = window.sk_sites.getRecentTab();
+      recent_tab.then(function(recentTab) {
+        chrome.tabs.sendMessage(recentTab.id,{ action: "getPlayerState" },(function(playerState) {
+          changeButton(playerState.isPlaying);
+        }));
+      });
+    }
+
   };
 
   /**
@@ -64,6 +82,16 @@
     if(request.action === "get_commands") response(window.coms);
     if(request.action === "command") processCommand(request);
     if(request.action === "update_player_state") {
+      var recent_tab = window.sk_sites.getRecentTab();
+      recent_tab.then(function(recentTab) {
+        console.log("updatestate");
+        if (sender.tab.id == recentTab.id) {
+          console.log("==");
+          console.log("isplaying " + request.stateData.isPlaying);
+          changeButton(request.stateData.isPlaying);
+        }
+      });
+
       chrome.runtime.sendMessage({
         action: "update_popup_state",
         stateData: request.stateData,
@@ -104,4 +132,8 @@
   // Define sk_sites as a sitelist in global context
   window.sk_sites = require("./modules/Sitelist.js");
   window.sk_sites.loadSettings();
+
+  chrome.browserAction.onClicked.addListener(function() {
+    sendAction("playPause");
+  });
 })();
