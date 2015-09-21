@@ -1,37 +1,38 @@
 ;(function() {
   "use strict";
-  
+
   var changeButton = function(isPlaying) {
     if(isPlaying) {
       chrome.browserAction.setIcon({ path: "./pause.png" });
     } else {
       chrome.browserAction.setIcon({ path: "./play.png" });
     }
-  }
+  };
 
   /**
    * Send a player action to every active player tab
    * @param {String} command - name of the command to pass to the players
    */
   var sendAction = function(command) {
-    var active_tabs = window.sk_sites.getActiveMusicTabs();
-    active_tabs.then(function(tabs) {
-      // Send the command to every music tab
-      tabs.forEach(function(tab) {
-        chrome.tabs.sendMessage(tab.id, { "action": command });
-        console.log("Sent: " + command + " To: " + tab.url);
+    if (command != "playPause") {
+      var active_tabs = window.sk_sites.getActiveMusicTabs();
+      active_tabs.then(function(tabs) {
+        // Send the command to every music tab
+        tabs.forEach(function(tab) {
+          chrome.tabs.sendMessage(tab.id, { "action": command });
+          console.log("Sent: " + command + " To: " + tab.url);
+        });
       });
-    });
-
-    if(command == "playPause") {
+    } else {
       var recent_tab = window.sk_sites.getRecentTab();
       recent_tab.then(function(recentTab) {
+        chrome.tabs.sendMessage(recentTab.id, { "action": command });
+        console.log("Sent: " + command + " To: " + recentTab.url);
         chrome.tabs.sendMessage(recentTab.id,{ action: "getPlayerState" },(function(playerState) {
           changeButton(playerState.isPlaying);
         }));
       });
     }
-
   };
 
   /**
